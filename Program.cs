@@ -23,8 +23,12 @@ builder.Services.AddSwaggerGen();
 // Registrar servicios, repositorios y validadores
 builder.Services.AddScoped<HashtagRepository>();
 builder.Services.AddScoped<HashtagService>();
+builder.Services.AddScoped<QuestionRepository>();
+builder.Services.AddScoped<QuestionService>();
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
+builder.Services.AddScoped<IValidator<CreateQuestionDto>, CreateQuestionValidator>();
+builder.Services.AddScoped<IValidator<UpdateQuestionDto>, UpdateQuestionValidator>();
 
 // Obtener la cadena de conexión desde el archivo .env o la configuración
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ??
