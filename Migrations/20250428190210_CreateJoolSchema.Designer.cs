@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using jool_backend.Repository;
 
@@ -11,9 +12,11 @@ using jool_backend.Repository;
 namespace jool_backend.Migrations
 {
     [DbContext(typeof(JoolContext))]
-    partial class JoolContextModelSnapshot : ModelSnapshot
+    [Migration("20250428190210_CreateJoolSchema")]
+    partial class CreateJoolSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

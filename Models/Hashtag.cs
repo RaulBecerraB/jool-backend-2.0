@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace jool_backend.Models
 {
@@ -11,6 +12,10 @@ namespace jool_backend.Models
         [Required]
         [Column(TypeName = "varchar(100)")]
         public string name { get; set; } = string.Empty;
+
         public int used_count { get; set; } = 0;
+
+        // Propiedades de navegación
+        public virtual ICollection<QuestionHashtag> QuestionHashtags { get; set; } = new List<QuestionHashtag>();
     }
 }
