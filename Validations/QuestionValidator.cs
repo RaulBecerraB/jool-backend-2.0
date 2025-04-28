@@ -6,11 +6,40 @@ using System.Threading.Tasks;
 
 namespace jool_backend.Validations
 {
+    // Synchronous validator for ASP.NET automatic validation
     public class CreateQuestionValidator : AbstractValidator<CreateQuestionDto>
     {
         private readonly JoolContext _context;
 
         public CreateQuestionValidator(JoolContext context)
+        {
+            _context = context;
+
+            RuleFor(q => q.title)
+                .NotEmpty().WithMessage("El título de la pregunta no puede estar vacío")
+                .MaximumLength(255).WithMessage("El título no puede exceder los 255 caracteres");
+
+            RuleFor(q => q.content)
+                .NotEmpty().WithMessage("El contenido de la pregunta no puede estar vacío")
+                .MaximumLength(5000).WithMessage("El contenido no puede exceder los 5000 caracteres");
+
+            RuleFor(q => q.user_id)
+                .NotEmpty().WithMessage("El ID de usuario es requerido");
+            // Removed async user validation for ASP.NET automatic validation
+
+            RuleForEach(q => q.hashtags)
+                .NotEmpty().WithMessage("Un hashtag no puede estar vacío")
+                .MaximumLength(100).WithMessage("Un hashtag no puede exceder los 100 caracteres")
+                .Matches("^[a-zA-Z0-9_]+$").WithMessage("Los hashtags solo pueden contener letras, números y guiones bajos");
+        }
+    }
+
+    // Async validator for manual validation
+    public class CreateQuestionValidatorAsync : AbstractValidator<CreateQuestionDto>
+    {
+        private readonly JoolContext _context;
+
+        public CreateQuestionValidatorAsync(JoolContext context)
         {
             _context = context;
 

@@ -1,10 +1,12 @@
 using jool_backend.Models;
 using jool_backend.Repository;
 using jool_backend.DTOs;
+using jool_backend.Validations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation.Results;
 
 namespace jool_backend.Services
 {
@@ -12,11 +14,16 @@ namespace jool_backend.Services
     {
         private readonly QuestionRepository _questionRepository;
         private readonly HashtagRepository _hashtagRepository;
+        private readonly CreateQuestionValidatorAsync _asyncValidator;
 
-        public QuestionService(QuestionRepository questionRepository, HashtagRepository hashtagRepository)
+        public QuestionService(
+            QuestionRepository questionRepository,
+            HashtagRepository hashtagRepository,
+            CreateQuestionValidatorAsync asyncValidator)
         {
             _questionRepository = questionRepository;
             _hashtagRepository = hashtagRepository;
+            _asyncValidator = asyncValidator;
         }
 
         public async Task<IEnumerable<QuestionDto>> GetAllQuestionsAsync()
@@ -45,6 +52,13 @@ namespace jool_backend.Services
 
         public async Task<QuestionDto?> CreateQuestionAsync(CreateQuestionDto createDto)
         {
+            // Validate using async validator
+            ValidationResult validationResult = await _asyncValidator.ValidateAsync(createDto);
+            if (!validationResult.IsValid)
+            {
+                return null;
+            }
+
             // Crear pregunta
             var question = new Question
             {

@@ -25,10 +25,17 @@ builder.Services.AddScoped<HashtagRepository>();
 builder.Services.AddScoped<HashtagService>();
 builder.Services.AddScoped<QuestionRepository>();
 builder.Services.AddScoped<QuestionService>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<AuthService>();
+
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
 builder.Services.AddScoped<IValidator<CreateQuestionDto>, CreateQuestionValidator>();
+builder.Services.AddScoped<CreateQuestionValidatorAsync>();
 builder.Services.AddScoped<IValidator<UpdateQuestionDto>, UpdateQuestionValidator>();
+builder.Services.AddScoped<IValidator<RegisterUserDto>, RegisterUserValidator>();
+builder.Services.AddScoped<RegisterUserValidatorAsync>();
+builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 
 // Obtener la cadena de conexión desde el archivo .env o la configuración
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ??
