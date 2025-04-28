@@ -1,14 +1,30 @@
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql;
 using jool_backend.Repository;
+using jool_backend.Services;
+using jool_backend.Validations;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using jool_backend.DTOs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation()
+    .AddFluentValidationClientsideAdapters()
+    .AddValidatorsFromAssemblyContaining<CreateHashtagValidator>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Registrar servicios, repositorios y validadores
+builder.Services.AddScoped<HashtagRepository>();
+builder.Services.AddScoped<HashtagService>();
+builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
+builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
 
 // Obtener la cadena de conexión desde el archivo .env o la configuración
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ??

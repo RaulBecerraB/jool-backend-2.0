@@ -1,11 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "bkLK8Tr3j9hyOl7L4Pb3YOlTtzFXdoTOFXxOFvhTWW2ocbVAzThqC3q8SMBzuY8Z6B1SNZmbEGerG1MvFKvTfA==",
+  "dgSpecHash": "Kc3XtLjO1x1BXgTWuSYUX2uQ55DS+Y7hRqm+6M+Bq62WGPKESKkW6VKU47LVNxmh0jl9sCek4B8YM//L6sm4jw==",
   "success": true,
   "projectFilePath": "C:\\AAAIMX\\Software\\Jool\\jool-backend\\jool-backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\raulb\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\raulb\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
+    "C:\\Users\\raulb\\.nuget\\packages\\fluentvalidation\\11.5.1\\fluentvalidation.11.5.1.nupkg.sha512",
+    "C:\\Users\\raulb\\.nuget\\packages\\fluentvalidation.aspnetcore\\11.3.0\\fluentvalidation.aspnetcore.11.3.0.nupkg.sha512",
+    "C:\\Users\\raulb\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\11.5.1\\fluentvalidation.dependencyinjectionextensions.11.5.1.nupkg.sha512",
     "C:\\Users\\raulb\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\raulb\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\6.0.0\\microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512",
     "C:\\Users\\raulb\\.nuget\\packages\\microsoft.codeanalysis.analyzers\\3.3.3\\microsoft.codeanalysis.analyzers.3.3.3.nupkg.sha512",
