@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Kc3XtLjO1x1BXgTWuSYUX2uQ55DS+Y7hRqm+6M+Bq62WGPKESKkW6VKU47LVNxmh0jl9sCek4B8YM//L6sm4jw==",
+  "dgSpecHash": "0ThfNeq+JIc=",
   "success": true,
-  "projectFilePath": "C:\\AAAIMX\\Software\\Jool\\jool-backend\\jool-backend.csproj",
+  "projectFilePath": "C:\\AAAIMX\\jool-backend-2.0\\jool-backend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\raulb\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\raulb\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
