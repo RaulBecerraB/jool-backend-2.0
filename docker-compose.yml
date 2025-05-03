@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=jool;User=root;Password=admin1;Port=3306
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - jool-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=jool
+      - MYSQL_ROOT_PASSWORD=admin1
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - jool-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+networks:
+  jool-network:
+    driver: bridge
+
+volumes:
+  mysql-data: 

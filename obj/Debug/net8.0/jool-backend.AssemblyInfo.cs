@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("jool-backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+99c9d1a8ca04b4d7a10f66c44879cb88c6f1059d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+797fe4411668c15e9c5db2032e0129fda6d134b3")]
 [assembly: System.Reflection.AssemblyProductAttribute("jool-backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("jool-backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
