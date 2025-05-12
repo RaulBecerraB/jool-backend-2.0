@@ -27,6 +27,7 @@ builder.Services.AddScoped<QuestionRepository>();
 builder.Services.AddScoped<QuestionService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ResponseService>();
 
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
