@@ -29,25 +29,25 @@ namespace jool_backend.Services
         public async Task<IEnumerable<QuestionDto>> GetAllQuestionsAsync()
         {
             var questions = await _questionRepository.GetAllQuestionsAsync();
-            return questions.Select(q => MapToDto(q));
+            return questions.Select(q => MapToListDto(q));
         }
 
         public async Task<QuestionDto?> GetQuestionByIdAsync(int id)
         {
             var question = await _questionRepository.GetQuestionByIdAsync(id);
-            return question != null ? MapToDto(question) : null;
+            return question != null ? MapToDetailDto(question) : null;
         }
 
         public async Task<IEnumerable<QuestionDto>> GetQuestionsByUserIdAsync(int userId)
         {
             var questions = await _questionRepository.GetQuestionsByUserIdAsync(userId);
-            return questions.Select(q => MapToDto(q));
+            return questions.Select(q => MapToListDto(q));
         }
 
         public async Task<IEnumerable<QuestionDto>> GetQuestionsByHashtagAsync(string hashtagName)
         {
             var questions = await _questionRepository.GetQuestionsByHashtagAsync(hashtagName);
-            return questions.Select(q => MapToDto(q));
+            return questions.Select(q => MapToListDto(q));
         }
 
         public async Task<QuestionDto?> CreateQuestionAsync(CreateQuestionDto createDto)
@@ -80,7 +80,7 @@ namespace jool_backend.Services
 
             // Recargar la pregunta con sus relaciones
             var savedQuestion = await _questionRepository.GetQuestionByIdAsync(createdQuestion.question_id);
-            return savedQuestion != null ? MapToDto(savedQuestion) : null;
+            return savedQuestion != null ? MapToDetailDto(savedQuestion) : null;
         }
 
         public async Task<QuestionDto?> UpdateQuestionAsync(int id, UpdateQuestionDto updateDto)
@@ -116,7 +116,7 @@ namespace jool_backend.Services
 
             // Recargar la pregunta con sus relaciones
             var updatedQuestion = await _questionRepository.GetQuestionByIdAsync(id);
-            return updatedQuestion != null ? MapToDto(updatedQuestion) : null;
+            return updatedQuestion != null ? MapToDetailDto(updatedQuestion) : null;
         }
 
         public async Task<bool> DeleteQuestionAsync(int id)
@@ -161,7 +161,7 @@ namespace jool_backend.Services
             await _questionRepository.UpdateQuestionAsync(question);
         }
 
-        private static QuestionDto MapToDto(Question question)
+        private static QuestionDto MapToListDto(Question question)
         {
             return new QuestionDto
             {
@@ -170,6 +170,7 @@ namespace jool_backend.Services
                 content = question.content,
                 user_id = question.user_id,
                 views = question.views,
+                response_count = question.response_count,
                 date = question.date,
                 user_name = $"{question.User.first_name} {question.User.last_name}",
                 hashtags = question.QuestionHashtags
@@ -179,6 +180,43 @@ namespace jool_backend.Services
                         name = qh.Hashtag.name,
                         used_count = qh.Hashtag.used_count
                     })
+                    .ToList(),
+                responses = new List<ResponseDto>() // Lista vacía para las listas
+            };
+        }
+
+        private static QuestionDto MapToDetailDto(Question question)
+        {
+            return new QuestionDto
+            {
+                question_id = question.question_id,
+                title = question.title,
+                content = question.content,
+                user_id = question.user_id,
+                views = question.views,
+                response_count = question.Responses.Count,
+                date = question.date,
+                user_name = $"{question.User.first_name} {question.User.last_name}",
+                hashtags = question.QuestionHashtags
+                    .Select(qh => new HashtagDto
+                    {
+                        hashtag_id = qh.Hashtag.hashtag_id,
+                        name = qh.Hashtag.name,
+                        used_count = qh.Hashtag.used_count
+                    })
+                    .ToList(),
+                responses = question.Responses
+                    .Select(r => new ResponseDto
+                    {
+                        response_id = r.response_id,
+                        content = r.content,
+                        user_id = r.user_id,
+                        likes = r.likes,
+                        question_id = r.question_id,
+                        date = r.date,
+                        user_name = $"{r.User.first_name} {r.User.last_name}"
+                    })
+                    .OrderByDescending(r => r.date)
                     .ToList()
             };
         }

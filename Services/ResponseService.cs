@@ -74,47 +74,38 @@ namespace jool_backend.Services
                 .ToListAsync();
         }
 
-        public async Task<ResponseDto?> CreateResponseAsync(CreateResponseDto createResponseDto)
+        public async Task<ResponseDto?> CreateResponseAsync(CreateResponseDto createDto)
         {
             // Verificar que la pregunta existe
-            var questionExists = await _context.Questions.AnyAsync(q => q.question_id == createResponseDto.question_id);
-            if (!questionExists)
+            var question = await _context.Questions.FindAsync(createDto.question_id);
+            if (question == null)
+            {
                 return null;
+            }
 
             // Verificar que el usuario existe
-            var userExists = await _context.Users.AnyAsync(u => u.user_id == createResponseDto.user_id);
-            if (!userExists)
+            var user = await _context.Users.FindAsync(createDto.user_id);
+            if (user == null)
+            {
                 return null;
+            }
 
             var response = new Response
             {
-                content = createResponseDto.content,
-                user_id = createResponseDto.user_id,
-                question_id = createResponseDto.question_id,
-                date = DateTime.Now,
-                likes = 0
+                content = createDto.content,
+                user_id = createDto.user_id,
+                question_id = createDto.question_id,
+                likes = 0,
+                date = DateTime.Now
             };
 
             _context.Responses.Add(response);
             await _context.SaveChangesAsync();
 
-            var createdResponse = await _context.Responses
-                .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.response_id == response.response_id);
+            // Cargar el usuario para el mapeo
+            await _context.Entry(response).Reference(r => r.User).LoadAsync();
 
-            if (createdResponse == null)
-                return null;
-
-            return new ResponseDto
-            {
-                response_id = createdResponse.response_id,
-                content = createdResponse.content,
-                user_id = createdResponse.user_id,
-                likes = createdResponse.likes,
-                question_id = createdResponse.question_id,
-                date = createdResponse.date,
-                user_name = $"{createdResponse.User.first_name} {createdResponse.User.last_name}"
-            };
+            return MapToDto(response);
         }
 
         public async Task<ResponseDto?> UpdateResponseAsync(int id, UpdateResponseDto updateResponseDto)
@@ -144,8 +135,11 @@ namespace jool_backend.Services
         public async Task<bool> DeleteResponseAsync(int id)
         {
             var response = await _context.Responses.FindAsync(id);
+
             if (response == null)
+            {
                 return false;
+            }
 
             _context.Responses.Remove(response);
             await _context.SaveChangesAsync();
@@ -161,6 +155,20 @@ namespace jool_backend.Services
             response.likes++;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        private static ResponseDto MapToDto(Response response)
+        {
+            return new ResponseDto
+            {
+                response_id = response.response_id,
+                content = response.content,
+                user_id = response.user_id,
+                likes = response.likes,
+                question_id = response.question_id,
+                date = response.date,
+                user_name = $"{response.User.first_name} {response.User.last_name}"
+            };
         }
     }
 } 

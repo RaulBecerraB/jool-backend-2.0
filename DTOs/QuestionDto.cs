@@ -10,6 +10,7 @@ namespace jool_backend.DTOs
         public string content { get; set; } = string.Empty;
         public int user_id { get; set; }
         public int views { get; set; }
+        public int response_count { get; set; }
         public DateTime date { get; set; }
 
         // Información básica del usuario (para no devolver toda la entidad)
@@ -17,5 +18,8 @@ namespace jool_backend.DTOs
 
         // Hashtags relacionados
         public List<HashtagDto> hashtags { get; set; } = new List<HashtagDto>();
+
+        // Respuestas a la pregunta
+        public List<ResponseDto> responses { get; set; } = new List<ResponseDto>();
     }
 }
