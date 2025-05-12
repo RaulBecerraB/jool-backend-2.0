@@ -48,20 +48,6 @@ namespace jool_backend.Controllers
             return Ok(response);
         }
 
-        // GET: api/responses/question/5
-        [HttpGet("question/{questionId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<ActionResult<IEnumerable<ResponseDto>>> GetResponsesByQuestion(int questionId)
-        {
-            var responses = await _responseService.GetResponsesByQuestionIdAsync(questionId);
-            if (responses == null || !responses.Any())
-            {
-                return NoContent();
-            }
-            return Ok(responses);
-        }
-
         // POST: api/responses
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -118,22 +104,6 @@ namespace jool_backend.Controllers
             }
 
             return NoContent();
-        }
-
-        // POST: api/responses/5/like
-        [HttpPost("{id}/like")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> LikeResponse(int id)
-        {
-            var result = await _responseService.LikeResponseAsync(id);
-
-            if (!result)
-            {
-                return NotFound();
-            }
-
-            return Ok(new { message = "Like agregado exitosamente" });
         }
     }
 } 

@@ -56,24 +56,6 @@ namespace jool_backend.Services
             };
         }
 
-        public async Task<IEnumerable<ResponseDto>> GetResponsesByQuestionIdAsync(int questionId)
-        {
-            return await _context.Responses
-                .Include(r => r.User)
-                .Where(r => r.question_id == questionId)
-                .Select(r => new ResponseDto
-                {
-                    response_id = r.response_id,
-                    content = r.content,
-                    user_id = r.user_id,
-                    likes = r.likes,
-                    question_id = r.question_id,
-                    date = r.date,
-                    user_name = $"{r.User.first_name} {r.User.last_name}"
-                })
-                .ToListAsync();
-        }
-
         public async Task<ResponseDto?> CreateResponseAsync(CreateResponseDto createDto)
         {
             // Verificar que la pregunta existe
@@ -142,17 +124,6 @@ namespace jool_backend.Services
             }
 
             _context.Responses.Remove(response);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> LikeResponseAsync(int id)
-        {
-            var response = await _context.Responses.FindAsync(id);
-            if (response == null)
-                return false;
-
-            response.likes++;
             await _context.SaveChangesAsync();
             return true;
         }
