@@ -6,6 +6,9 @@ using jool_backend.Validations;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using jool_backend.DTOs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +23,31 @@ builder.Services.AddFluentValidationAutoValidation()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configuración de JWT
+var jwtSection = builder.Configuration.GetSection("JWT");
+var secretKey = jwtSection["SecretKey"];
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = key,
+        ValidateIssuer = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSection["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
 // Registrar servicios, repositorios y validadores
 builder.Services.AddScoped<HashtagRepository>();
 builder.Services.AddScoped<HashtagService>();
@@ -27,6 +55,7 @@ builder.Services.AddScoped<QuestionRepository>();
 builder.Services.AddScoped<QuestionService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
@@ -67,6 +96,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Añadir middleware de autenticación antes de autorización
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

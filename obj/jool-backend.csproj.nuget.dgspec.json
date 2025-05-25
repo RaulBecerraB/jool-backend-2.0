@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\AAAIMX\\jool-backend-2.0\\jool-backend.csproj": {}
+    "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj": {}
   },
   "projects": {
-    "C:\\AAAIMX\\jool-backend-2.0\\jool-backend.csproj": {
+    "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\AAAIMX\\jool-backend-2.0\\jool-backend.csproj",
+        "projectUniqueName": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj",
         "projectName": "jool-backend",
-        "projectPath": "C:\\AAAIMX\\jool-backend-2.0\\jool-backend.csproj",
+        "projectPath": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj",
         "packagesPath": "C:\\Users\\raulb\\.nuget\\packages\\",
-        "outputPath": "C:\\AAAIMX\\jool-backend-2.0\\obj\\",
+        "outputPath": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\raulb\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -48,6 +48,10 @@
             "FluentValidation.AspNetCore": {
               "target": "Package",
               "version": "[11.3.0, )"
+            },
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",

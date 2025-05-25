@@ -14,11 +14,13 @@ namespace jool_backend.Services
     {
         private readonly UserRepository _userRepository;
         private readonly RegisterUserValidatorAsync _asyncValidator;
+        private readonly TokenService _tokenService;
 
-        public AuthService(UserRepository userRepository, RegisterUserValidatorAsync asyncValidator)
+        public AuthService(UserRepository userRepository, RegisterUserValidatorAsync asyncValidator, TokenService tokenService)
         {
             _userRepository = userRepository;
             _asyncValidator = asyncValidator;
+            _tokenService = tokenService;
         }
 
         public async Task<UserDto?> RegisterUserAsync(RegisterUserDto registerDto)
@@ -47,8 +49,13 @@ namespace jool_backend.Services
             // Guardar en la base de datos
             var createdUser = await _userRepository.CreateUserAsync(user);
 
+            // Generar token JWT
+            var token = _tokenService.GenerateJwtToken(createdUser);
+
             // Mapear a DTO y retornar
-            return MapToUserDto(createdUser);
+            var userDto = MapToUserDto(createdUser);
+            userDto.Token = token;
+            return userDto;
         }
 
         public async Task<UserDto?> LoginAsync(LoginDto loginDto)
@@ -68,8 +75,13 @@ namespace jool_backend.Services
                 return null;
             }
 
+            // Generar token JWT
+            var token = _tokenService.GenerateJwtToken(user);
+
             // Mapear a DTO y retornar
-            return MapToUserDto(user);
+            var userDto = MapToUserDto(user);
+            userDto.Token = token;
+            return userDto;
         }
 
         private string HashPassword(string password)
@@ -112,7 +124,8 @@ namespace jool_backend.Services
                 email = user.email,
                 is_active = user.is_active,
                 phone = user.phone,
-                has_image = user.image != null && user.image.Length > 0
+                has_image = user.image != null && user.image.Length > 0,
+                Token = null
             };
         }
     }
