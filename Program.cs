@@ -9,6 +9,9 @@ using jool_backend.DTOs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Net;
+using Microsoft.AspNetCore.Diagnostics;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +49,43 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+    
+    // Configurar eventos para manejar errores
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                context.Response.ContentType = "application/json";
+                var result = JsonSerializer.Serialize(new { message = "El token ha expirado" });
+                return context.Response.WriteAsync(result);
+            }
+            else
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                context.Response.ContentType = "application/json";
+                var result = JsonSerializer.Serialize(new { message = "Token inválido" });
+                return context.Response.WriteAsync(result);
+            }
+        },
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new { message = "No estás autorizado. Se requiere un token válido." });
+            return context.Response.WriteAsync(result);
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new { message = "No tienes permisos para acceder a este recurso" });
+            return context.Response.WriteAsync(result);
+        }
+    };
 });
 
 // Registrar servicios, repositorios y validadores
@@ -56,6 +96,7 @@ builder.Services.AddScoped<QuestionService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<ResponseService>();
 
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();

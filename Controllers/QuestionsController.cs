@@ -4,11 +4,13 @@ using jool_backend.DTOs;
 using jool_backend.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace jool_backend.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [Authorize]
     public class QuestionsController : ControllerBase
     {
         private readonly QuestionService _questionService;

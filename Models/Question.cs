@@ -25,6 +25,9 @@ namespace jool_backend.Models
 
         public int stars { get; set; } = 0;
 
+        [NotMapped] // Esta propiedad no se mapea a la base de datos
+        public int response_count { get; set; } = 0;
+
         public DateTime date { get; set; } = DateTime.Now;
 
         // Propiedades de navegación

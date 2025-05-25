@@ -17,12 +17,29 @@ namespace jool_backend.Repository
 
         public async Task<List<Question>> GetAllQuestionsAsync()
         {
-            return await _context.Questions
+            var questions = await _context.Questions
                 .Include(q => q.User)
                 .Include(q => q.QuestionHashtags)
                     .ThenInclude(qh => qh.Hashtag)
                 .OrderByDescending(q => q.date)
                 .ToListAsync();
+
+            // Obtener conteos de respuestas para todas las preguntas
+            var questionIds = questions.Select(q => q.question_id).ToList();
+            var responseCounts = await _context.Responses
+                .Where(r => questionIds.Contains(r.question_id))
+                .GroupBy(r => r.question_id)
+                .Select(g => new { QuestionId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            // Asignar conteos a las preguntas
+            foreach (var question in questions)
+            {
+                var count = responseCounts.FirstOrDefault(rc => rc.QuestionId == question.question_id);
+                question.response_count = count?.Count ?? 0;
+            }
+
+            return questions;
         }
 
         public async Task<Question?> GetQuestionByIdAsync(int id)
@@ -31,6 +48,8 @@ namespace jool_backend.Repository
                 .Include(q => q.User)
                 .Include(q => q.QuestionHashtags)
                     .ThenInclude(qh => qh.Hashtag)
+                .Include(q => q.Responses)
+                    .ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(q => q.question_id == id);
 
             if (question != null)
@@ -98,24 +117,58 @@ namespace jool_backend.Repository
 
         public async Task<List<Question>> GetQuestionsByUserIdAsync(int userId)
         {
-            return await _context.Questions
+            var questions = await _context.Questions
                 .Include(q => q.User)
                 .Include(q => q.QuestionHashtags)
                     .ThenInclude(qh => qh.Hashtag)
                 .Where(q => q.user_id == userId)
                 .OrderByDescending(q => q.date)
                 .ToListAsync();
+
+            // Obtener conteos de respuestas para todas las preguntas
+            var questionIds = questions.Select(q => q.question_id).ToList();
+            var responseCounts = await _context.Responses
+                .Where(r => questionIds.Contains(r.question_id))
+                .GroupBy(r => r.question_id)
+                .Select(g => new { QuestionId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            // Asignar conteos a las preguntas
+            foreach (var question in questions)
+            {
+                var count = responseCounts.FirstOrDefault(rc => rc.QuestionId == question.question_id);
+                question.response_count = count?.Count ?? 0;
+            }
+
+            return questions;
         }
 
         public async Task<List<Question>> GetQuestionsByHashtagAsync(string hashtagName)
         {
-            return await _context.Questions
+            var questions = await _context.Questions
                 .Include(q => q.User)
                 .Include(q => q.QuestionHashtags)
                     .ThenInclude(qh => qh.Hashtag)
                 .Where(q => q.QuestionHashtags.Any(qh => qh.Hashtag.name == hashtagName))
                 .OrderByDescending(q => q.date)
                 .ToListAsync();
+
+            // Obtener conteos de respuestas para todas las preguntas
+            var questionIds = questions.Select(q => q.question_id).ToList();
+            var responseCounts = await _context.Responses
+                .Where(r => questionIds.Contains(r.question_id))
+                .GroupBy(r => r.question_id)
+                .Select(g => new { QuestionId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            // Asignar conteos a las preguntas
+            foreach (var question in questions)
+            {
+                var count = responseCounts.FirstOrDefault(rc => rc.QuestionId == question.question_id);
+                question.response_count = count?.Count ?? 0;
+            }
+
+            return questions;
         }
     }
 }

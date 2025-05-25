@@ -11,74 +11,78 @@ namespace jool_backend.Controllers
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class HashtagsController : ControllerBase
+    public class ResponsesController : ControllerBase
     {
-        private readonly HashtagService _hashtagService;
+        private readonly ResponseService _responseService;
 
-        public HashtagsController(HashtagService hashtagService)
+        public ResponsesController(ResponseService responseService)
         {
-            _hashtagService = hashtagService;
+            _responseService = responseService;
         }
 
-        // GET: api/hashtags
+        // GET: api/responses
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<ActionResult<IEnumerable<HashtagDto>>> GetHashtags()
+        public async Task<ActionResult<IEnumerable<ResponseDto>>> GetResponses()
         {
-            var hashtags = await _hashtagService.GetAllHashtagsAsync();
-            if (hashtags == null || !hashtags.Any())
+            var responses = await _responseService.GetAllResponsesAsync();
+            if (responses == null || !responses.Any())
             {
                 return NoContent();
             }
-            return Ok(hashtags);
+            return Ok(responses);
         }
 
-        // GET: api/hashtags/5
+        // GET: api/responses/5
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<HashtagDto>> GetHashtag(int id)
+        public async Task<ActionResult<ResponseDto>> GetResponse(int id)
         {
-            var hashtag = await _hashtagService.GetHashtagByIdAsync(id);
+            var response = await _responseService.GetResponseByIdAsync(id);
 
-            if (hashtag == null)
+            if (response == null)
             {
                 return NotFound();
             }
 
-            return Ok(hashtag);
+            return Ok(response);
         }
 
-        // POST: api/hashtags
+        // POST: api/responses
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<HashtagDto>> CreateHashtag(CreateHashtagDto createHashtagDto)
+        public async Task<ActionResult<ResponseDto>> CreateResponse(CreateResponseDto createResponseDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _hashtagService.CreateHashtagAsync(createHashtagDto);
+            var result = await _responseService.CreateResponseAsync(createResponseDto);
+            if (result == null)
+            {
+                return BadRequest("No se pudo crear la respuesta. Verifique que la pregunta y el usuario existan.");
+            }
 
-            return CreatedAtAction(nameof(GetHashtag), new { id = result.hashtag_id }, result);
+            return CreatedAtAction(nameof(GetResponse), new { id = result.response_id }, result);
         }
 
-        // PUT: api/hashtags/5
+        // PUT: api/responses/5
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateHashtag(int id, UpdateHashtagDto updateHashtagDto)
+        public async Task<IActionResult> UpdateResponse(int id, UpdateResponseDto updateResponseDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _hashtagService.UpdateHashtagAsync(id, updateHashtagDto);
+            var result = await _responseService.UpdateResponseAsync(id, updateResponseDto);
 
             if (result == null)
             {
@@ -88,13 +92,13 @@ namespace jool_backend.Controllers
             return Ok(result);
         }
 
-        // DELETE: api/hashtags/5
+        // DELETE: api/responses/5
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteHashtag(int id)
+        public async Task<IActionResult> DeleteResponse(int id)
         {
-            var result = await _hashtagService.DeleteHashtagAsync(id);
+            var result = await _responseService.DeleteResponseAsync(id);
 
             if (!result)
             {
@@ -104,4 +108,4 @@ namespace jool_backend.Controllers
             return NoContent();
         }
     }
-}
+} 
