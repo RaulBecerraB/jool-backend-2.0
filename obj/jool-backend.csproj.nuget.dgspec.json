@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj": {}
+    "C:\\AAAIMX\\Jool\\Server\\jool-backend.csproj": {}
   },
   "projects": {
-    "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj": {
+    "C:\\AAAIMX\\Jool\\Server\\jool-backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj",
+        "projectUniqueName": "C:\\AAAIMX\\Jool\\Server\\jool-backend.csproj",
         "projectName": "jool-backend",
-        "projectPath": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\jool-backend.csproj",
+        "projectPath": "C:\\AAAIMX\\Jool\\Server\\jool-backend.csproj",
         "packagesPath": "C:\\Users\\raulb\\.nuget\\packages\\",
-        "outputPath": "C:\\AAAIMX\\Jool\\jool-backend-2.0\\obj\\",
+        "outputPath": "C:\\AAAIMX\\Jool\\Server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\raulb\\AppData\\Roaming\\NuGet\\NuGet.Config",

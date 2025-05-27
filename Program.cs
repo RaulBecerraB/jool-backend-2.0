@@ -26,6 +26,16 @@ builder.Services.AddFluentValidationAutoValidation()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configuración para deshabilitar CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", 
+        builder => builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 // Configuración de JWT
 var jwtSection = builder.Configuration.GetSection("JWT");
 var secretKey = jwtSection["SecretKey"];
@@ -136,6 +146,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Habilitar CORS
+app.UseCors("AllowAll");
 
 // Añadir middleware de autenticación antes de autorización
 app.UseAuthentication();
