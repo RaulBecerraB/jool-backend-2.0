@@ -12,6 +12,10 @@ using System.Text;
 using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
+using DotNetEnv;
+
+// Cargar variables de entorno desde el archivo .env
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -120,7 +124,11 @@ builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
 // Obtener la cadena de conexión desde el archivo .env o la configuración
 string connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ??
     builder.Configuration.GetConnectionString("DefaultConnection") ??
-    "Server=localhost;Port=3306;Database=jool;User=root;Password=admin1;";
+    $"Server={Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost"};" +
+    $"Port={Environment.GetEnvironmentVariable("DB_PORT") ?? "3306"};" +
+    $"Database={Environment.GetEnvironmentVariable("DB_NAME") ?? "jool"};" +
+    $"User={Environment.GetEnvironmentVariable("DB_USER") ?? "root"};" +
+    $"Password={Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "admin1"};";
 
 // Add services to the container.
 builder.Services.AddDbContext<JoolContext>(options =>
