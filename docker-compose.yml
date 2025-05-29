@@ -6,8 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:80"    # HTTP
-      - "8443:443"   # HTTPS
+      - "8080:80"    # Solo necesitamos exponer HTTP internamente
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db;Database=jool;User=root;Password=admin1;Port=3306

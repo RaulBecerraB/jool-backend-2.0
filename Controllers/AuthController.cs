@@ -159,6 +159,10 @@ namespace jool_backend.Controllers
                 
                 var code = Request.Query["code"];
                 
+                // Imprimir información de depuración
+                LoggingUtils.LogInfo($"Recibido código de autorización: {code.ToString().Substring(0, 10)}...", nameof(AuthController));
+                LoggingUtils.LogInfo($"URL completa: {Request.Scheme}://{Request.Host}{Request.Path}{Request.QueryString}", nameof(AuthController));
+                
                 // Procesar el código de autorización
                 var (user, token) = await _microsoftAuthService.ProcessAuthorizationCodeAsync(code);
                 
