@@ -2,6 +2,7 @@ using jool_backend.Models;
 using jool_backend.Repository;
 using jool_backend.DTOs;
 using jool_backend.Validations;
+using jool_backend.Utils;
 using System;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
@@ -29,11 +30,12 @@ namespace jool_backend.Services
             var existingUser = await _userRepository.GetUserByEmailAsync(registerDto.email);
             if (existingUser != null)
             {
+                LoggingUtils.LogInfo($"Intento de registro con email ya existente: {registerDto.email}", nameof(AuthService));
                 return null;
             }
 
             // Crear hash de la contraseña
-            string passwordHash = HashPassword(registerDto.password);
+            string passwordHash = SecurityUtils.HashPassword(registerDto.password);
 
             // Crear nuevo usuario
             var user = new User
@@ -48,14 +50,13 @@ namespace jool_backend.Services
 
             // Guardar en la base de datos
             var createdUser = await _userRepository.CreateUserAsync(user);
+            LoggingUtils.LogInfo($"Usuario registrado exitosamente: {createdUser.email}", nameof(AuthService));
 
             // Generar token JWT
             var token = _tokenService.GenerateJwtToken(createdUser);
 
             // Mapear a DTO y retornar
-            var userDto = MapToUserDto(createdUser);
-            userDto.Token = token;
-            return userDto;
+            return MappingUtils.MapToUserDtoWithToken(createdUser, token);
         }
 
         public async Task<UserDto?> LoginAsync(LoginDto loginDto)
@@ -66,22 +67,24 @@ namespace jool_backend.Services
             // Verificar que el usuario existe y está activo
             if (user == null || !user.is_active)
             {
+                LoggingUtils.LogInfo($"Intento de login fallido: usuario no existe o inactivo - {loginDto.email}", nameof(AuthService));
                 return null;
             }
 
             // Verificar contraseña
-            if (!VerifyPassword(loginDto.password, user.password))
+            if (!SecurityUtils.VerifyPassword(loginDto.password, user.password))
             {
+                LoggingUtils.LogInfo($"Intento de login fallido: contraseña incorrecta - {loginDto.email}", nameof(AuthService));
                 return null;
             }
+
+            LoggingUtils.LogInfo($"Login exitoso: {user.email}", nameof(AuthService));
 
             // Generar token JWT
             var token = _tokenService.GenerateJwtToken(user);
 
             // Mapear a DTO y retornar
-            var userDto = MapToUserDto(user);
-            userDto.Token = token;
-            return userDto;
+            return MappingUtils.MapToUserDtoWithToken(user, token);
         }
 
         private string HashPassword(string password)
