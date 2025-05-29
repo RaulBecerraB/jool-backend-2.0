@@ -38,6 +38,22 @@ catch (Exception ex)
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar Kestrel para HTTPS
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    // Configurar HTTP
+    serverOptions.ListenAnyIP(80);
+    
+    // Configurar HTTPS
+    serverOptions.ListenAnyIP(443, listenOptions =>
+    {
+        // Usar el certificado configurado en las variables de entorno
+        listenOptions.UseHttps();
+    });
+    
+    Console.WriteLine("Kestrel configurado para HTTP (80) y HTTPS (443)");
+});
+
 // Add services to the container.
 
 builder.Services.AddControllers();
