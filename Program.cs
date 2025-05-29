@@ -13,6 +13,10 @@ using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
 using DotNetEnv;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Mvc.Routing;
 
 // Cargar variables de entorno desde el archivo .env
 Env.Load();
@@ -28,7 +32,43 @@ builder.Services.AddFluentValidationAutoValidation()
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
+    { 
+        Title = "Jool API", 
+        Version = "v1",
+        Description = "API para la plataforma Jool"
+    });
+    
+    // Configurar seguridad JWT para Swagger
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+    
+    // Configuración para manejar rutas duplicadas
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+});
 
 // Configuración para deshabilitar CORS
 builder.Services.AddCors(options =>
@@ -45,11 +85,8 @@ var jwtSection = builder.Configuration.GetSection("JWT");
 var secretKey = jwtSection["SecretKey"];
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+// Configuración para autenticación JWT solamente (sin Microsoft)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -111,6 +148,9 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<ResponseService>();
+builder.Services.AddScoped<MicrosoftAuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IValidator<CreateHashtagDto>, CreateHashtagValidator>();
 builder.Services.AddScoped<IValidator<UpdateHashtagDto>, UpdateHashtagValidator>();
@@ -151,12 +191,29 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    
+    // Imprimir las rutas registradas en modo desarrollo
+    var endpointDataSource = app.Services.GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>();
+    foreach (var endpoint in endpointDataSource.Endpoints)
+    {
+        if (endpoint is RouteEndpoint routeEndpoint)
+        {
+            Console.WriteLine($"Ruta registrada: {routeEndpoint.RoutePattern.RawText} ({string.Join(", ", routeEndpoint.Metadata.OfType<HttpMethodMetadata>().SelectMany(m => m.HttpMethods))})");
+        }
+    }
 }
 
 app.UseHttpsRedirection();
 
 // Habilitar CORS
 app.UseCors("AllowAll");
+
+// Middleware personalizado para debug
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Solicitud recibida: {context.Request.Method} {context.Request.Path}");
+    await next.Invoke();
+});
 
 // Añadir middleware de autenticación antes de autorización
 app.UseAuthentication();
