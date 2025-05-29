@@ -19,7 +19,22 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Routing;
 
 // Cargar variables de entorno desde el archivo .env
-Env.Load();
+try
+{
+    Env.Load();
+    Console.WriteLine("Variables de entorno cargadas desde .env");
+    
+    // Verificar si las variables críticas están presentes
+    var clientId = Environment.GetEnvironmentVariable("MS_CLIENT_ID");
+    var clientSecret = Environment.GetEnvironmentVariable("MS_CLIENT_SECRET");
+    
+    Console.WriteLine($"MS_CLIENT_ID está {(string.IsNullOrEmpty(clientId) ? "AUSENTE" : "presente")}");
+    Console.WriteLine($"MS_CLIENT_SECRET está {(string.IsNullOrEmpty(clientSecret) ? "AUSENTE" : "presente")}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error al cargar variables de entorno: {ex.Message}");
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +93,17 @@ builder.Services.AddCors(options =>
             .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader());
+});
+
+// Configuración de sesión
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Configuración de JWT
@@ -207,6 +233,9 @@ app.UseHttpsRedirection();
 
 // Habilitar CORS
 app.UseCors("AllowAll");
+
+// Añadir middleware de sesión
+app.UseSession();
 
 // Middleware personalizado para debug
 app.Use(async (context, next) =>

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
 
 namespace jool_backend.Controllers
 {
@@ -26,19 +27,22 @@ namespace jool_backend.Controllers
         private readonly TokenService _tokenService;
         private readonly UserRepository _userRepository;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
         public AuthController(
             AuthService authService, 
             MicrosoftAuthService microsoftAuthService,
             TokenService tokenService,
             UserRepository userRepository,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration)
         {
             _authService = authService;
             _microsoftAuthService = microsoftAuthService;
             _tokenService = tokenService;
             _userRepository = userRepository;
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         // POST: /auth/register
@@ -109,32 +113,31 @@ namespace jool_backend.Controllers
         // GET: /auth/login-microsoft
         [HttpGet("login-microsoft")]
         [AllowAnonymous]
-        public IActionResult LoginWithMicrosoft()
+        public IActionResult LoginWithMicrosoft([FromQuery] string redirectUrl = null)
         {
             try 
             {
-                // Configurar la URL de redirección - importante usar minúsculas en 'auth'
-                var redirectUri = $"{Request.Scheme}://{Request.Host}/auth/microsoft-callback";
-                
                 // Generar la URL de autorización de Microsoft
-                var clientId = Environment.GetEnvironmentVariable("MS_CLIENT_ID");
-                var scope = "https://graph.microsoft.com/user.read";
-                
-                var authorizationUrl = $"https://login.microsoftonline.com/common/oauth2/v2.0/authorize" + 
-                    $"?client_id={clientId}" +
-                    $"&response_type=code" +
-                    $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
-                    $"&response_mode=query" +
-                    $"&scope={Uri.EscapeDataString(scope)}";
+                var authorizationUrl = _microsoftAuthService.GetAuthorizationUrl(redirectUrl);
                 
                 // Devolver la URL en lugar de redireccionar
-                return Ok(new { 
-                    redirect_url = authorizationUrl
-                });
+                // No usar tipo anónimo, usar un diccionario
+                var response = new Dictionary<string, string>
+                {
+                    ["redirect_url"] = authorizationUrl
+                };
+                
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "Error al generar URL para autenticación con Microsoft" });
+                Console.WriteLine($"Error en LoginWithMicrosoft: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                
+                return BadRequest(new Dictionary<string, string>
+                {
+                    ["error"] = "Error al generar URL para autenticación con Microsoft"
+                });
             }
         }
 
@@ -146,134 +149,81 @@ namespace jool_backend.Controllers
             try
             {
                 // Verificar si hay errores en la respuesta
-                if (Request.Query.ContainsKey("error") && 
-                    Request.Query["error"] != "invalid_state") // Ignorar errores de estado
+                if (Request.Query.ContainsKey("error"))
                 {
                     var error = Request.Query["error"];
                     var errorDescription = Request.Query["error_description"];
-                    return BadRequest(new { message = $"Error durante la autenticación: {errorDescription}" });
+                    
+                    // Obtener la URL de error del frontend desde la configuración
+                    string frontendErrorUrl = _configuration["Authentication:Microsoft:FrontendErrorUrl"] ?? 
+                                             $"{Request.Scheme}://{Request.Host}/auth/login-error";
+                    
+                    // Redirigir al frontend con el error
+                    return Redirect($"{frontendErrorUrl}?error={Uri.EscapeDataString(errorDescription)}");
                 }
                 
                 // Obtener el código de autorización
                 if (!Request.Query.ContainsKey("code"))
                 {
-                    return BadRequest(new { message = "No se recibió el código de autorización" });
+                    string frontendErrorUrl = _configuration["Authentication:Microsoft:FrontendErrorUrl"] ?? 
+                                             $"{Request.Scheme}://{Request.Host}/auth/login-error";
+                    
+                    return Redirect($"{frontendErrorUrl}?error=No se recibió el código de autorización");
                 }
                 
                 var code = Request.Query["code"];
                 
-                // Intercambiar el código por un token manualmente
-                var redirectUri = $"{Request.Scheme}://{Request.Host}/auth/microsoft-callback";
-                var client = _httpClientFactory.CreateClient();
+                // Procesar el código de autorización
+                var (user, token) = await _microsoftAuthService.ProcessAuthorizationCodeAsync(code);
                 
-                var tokenRequestContent = new FormUrlEncodedContent(new Dictionary<string, string>
+                // Construir objeto de respuesta usando Dictionary en lugar de tipo anónimo
+                var authResult = new Dictionary<string, object>
                 {
-                    ["client_id"] = Environment.GetEnvironmentVariable("MS_CLIENT_ID"),
-                    ["client_secret"] = Environment.GetEnvironmentVariable("MS_CLIENT_SECRET"),
-                    ["code"] = code,
-                    ["redirect_uri"] = redirectUri,
-                    ["grant_type"] = "authorization_code"
-                });
-                
-                var tokenResponse = await client.PostAsync(
-                    "https://login.microsoftonline.com/common/oauth2/v2.0/token", 
-                    tokenRequestContent);
-                
-                var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
-                
-                if (!tokenResponse.IsSuccessStatusCode)
-                {
-                    return BadRequest(new { message = "Error al obtener token de acceso" });
-                }
-                
-                // Extraer el token de acceso
-                var tokenData = JsonDocument.Parse(tokenResponseContent);
-                var accessToken = tokenData.RootElement.GetProperty("access_token").GetString();
-                
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    return BadRequest(new { message = "Token de acceso vacío" });
-                }
-                
-                // Obtener información del usuario
-                client.DefaultRequestHeaders.Clear();
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
-                
-                var userResponse = await client.GetAsync("https://graph.microsoft.com/v1.0/me");
-                var userResponseContent = await userResponse.Content.ReadAsStringAsync();
-                
-                if (!userResponse.IsSuccessStatusCode)
-                {
-                    return BadRequest(new { message = "Error al obtener información del usuario" });
-                }
-                
-                // Extraer datos del usuario
-                var userData = JsonDocument.Parse(userResponseContent);
-                
-                string email = null;
-                if (userData.RootElement.TryGetProperty("mail", out var mailProperty) && 
-                    mailProperty.ValueKind != JsonValueKind.Null)
-                {
-                    email = mailProperty.GetString();
-                }
-                else if (userData.RootElement.TryGetProperty("userPrincipalName", out var upnProperty))
-                {
-                    email = upnProperty.GetString();
-                }
-                
-                var firstName = userData.RootElement.TryGetProperty("givenName", out var givenNameProperty) 
-                    ? givenNameProperty.GetString() : "Usuario";
-                
-                var lastName = userData.RootElement.TryGetProperty("surname", out var surnameProperty)
-                    ? surnameProperty.GetString() : "Microsoft";
-                
-                if (string.IsNullOrEmpty(email))
-                {
-                    return BadRequest(new { message = "No se pudo obtener el email del usuario" });
-                }
-                
-                // Buscar o crear usuario
-                var existingUser = await _userRepository.GetUserByEmailAsync(email);
-                
-                if (existingUser == null)
-                {
-                    // Crear un nuevo usuario con una contraseña aleatoria
-                    string randomPassword = Guid.NewGuid().ToString();
-                    string passwordHash = HashPassword(randomPassword);
-                    
-                    var newUser = new Models.User
+                    ["user_id"] = user.user_id,
+                    ["first_name"] = user.first_name,
+                    ["last_name"] = user.last_name,
+                    ["email"] = user.email,
+                    ["is_active"] = user.is_active,
+                    ["phone"] = user.phone,
+                    ["has_image"] = user.image != null && user.image.Length > 0,
+                    ["token"] = new Dictionary<string, object>
                     {
-                        email = email,
-                        first_name = firstName ?? "Usuario",
-                        last_name = lastName ?? "Microsoft",
-                        password = passwordHash,
-                        is_active = true
-                    };
-                    
-                    existingUser = await _userRepository.CreateUserAsync(newUser);
+                        ["accessToken"] = token.AccessToken,
+                        ["expiresAt"] = token.ExpiresAt
+                    }
+                };
+
+                // Verificar si hay una URL de redirección personalizada en la sesión
+                string customRedirectUrl = null;
+                if (HttpContext.Session.TryGetValue("MicrosoftAuthRedirectUrl", out var redirectUrlBytes))
+                {
+                    customRedirectUrl = Encoding.UTF8.GetString(redirectUrlBytes);
+                    HttpContext.Session.Remove("MicrosoftAuthRedirectUrl");
                 }
                 
-                // Generar JWT
-                var token = _tokenService.GenerateJwtToken(existingUser);
+                // Obtener la URL de callback del frontend desde la configuración
+                string frontendCallbackUrl = customRedirectUrl ?? 
+                                           _configuration["Authentication:Microsoft:FrontendCallbackUrl"] ?? 
+                                           $"{Request.Scheme}://{Request.Host}/auth/login-success";
                 
-                // Devolver los datos del usuario y el token en formato JSON
-                return Ok(new { 
-                    user_id = existingUser.user_id,
-                    first_name = existingUser.first_name,
-                    last_name = existingUser.last_name,
-                    email = existingUser.email,
-                    is_active = existingUser.is_active,
-                    phone = existingUser.phone,
-                    has_image = existingUser.image != null && existingUser.image.Length > 0,
-                    token = new {
-                        accessToken = token.AccessToken,
-                        expiresAt = token.ExpiresAt
-                    }
-                });
+                // Serializar los datos y codificar para URL
+                var serializedData = JsonSerializer.Serialize(authResult);
+                var encodedData = Uri.EscapeDataString(serializedData);
+                
+                // Redirigir al frontend con los datos en el fragmento hash (#)
+                return Redirect($"{frontendCallbackUrl}#{encodedData}");
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "Error durante la autenticación con Microsoft" });
+                Console.WriteLine($"Error en MicrosoftCallback: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                
+                // Obtener la URL de error del frontend desde la configuración
+                string frontendErrorUrl = _configuration["Authentication:Microsoft:FrontendErrorUrl"] ?? 
+                                         $"{Request.Scheme}://{Request.Host}/auth/login-error";
+                
+                // Redirigir al frontend con el error
+                return Redirect($"{frontendErrorUrl}?error={Uri.EscapeDataString("Error durante la autenticación con Microsoft")}");
             }
         }
 
@@ -282,7 +232,10 @@ namespace jool_backend.Controllers
         [AllowAnonymous]
         public IActionResult LoginError()
         {
-            return BadRequest(new { message = "Error durante la autenticación con Microsoft. Por favor, intente de nuevo." });
+            return BadRequest(new Dictionary<string, string>
+            {
+                ["message"] = "Error durante la autenticación con Microsoft. Por favor, intente de nuevo."
+            });
         }
         
         private string HashPassword(string password)
