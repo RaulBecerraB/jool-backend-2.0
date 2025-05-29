@@ -29,7 +29,7 @@ builder.Services.AddSwaggerGen();
 // Configuración para deshabilitar CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", 
+    options.AddPolicy("AllowAll",
         builder => builder
             .AllowAnyOrigin()
             .AllowAnyMethod()
@@ -59,7 +59,7 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
-    
+
     // Configurar eventos para manejar errores
     options.Events = new JwtBearerEvents
     {
