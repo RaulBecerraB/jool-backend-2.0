@@ -51,6 +51,11 @@ chmod +x /app/entrypoint.sh
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:80
 ENV ASPNETCORE_ENVIRONMENT=Production
+# Usar ARG para recibir las variables en tiempo de construcción o dejarlas vacías para pasarlas en tiempo de ejecución
+ARG MS_CLIENT_ID_ARG
+ARG MS_CLIENT_SECRET_ARG
+ENV MS_CLIENT_ID=${MS_CLIENT_ID_ARG}
+ENV MS_CLIENT_SECRET=${MS_CLIENT_SECRET_ARG}
 
 # Expose port 80
 EXPOSE 80
