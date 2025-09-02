@@ -445,7 +445,7 @@ namespace jool_backend.Services
                 }
 
                 // Siempre usar localhost para la URL de redirección en Azure AD
-                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com:8080/auth/microsoft-callback";
+                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com/auth/microsoft-callback";
 
                 // Guardar la URL real para usar después en el callback
                 var request = _httpContextAccessor.HttpContext.Request;
