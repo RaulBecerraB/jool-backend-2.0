@@ -11,7 +11,7 @@ namespace jool_backend.DTOs
 
         // Para la imagen, se devuelve un indicador de si existe o no
         public bool has_image { get; set; }
-        
+
         // Token de autenticación
         public TokenDto? Token { get; set; }
     }

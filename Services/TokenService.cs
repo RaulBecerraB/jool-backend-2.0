@@ -83,7 +83,7 @@ namespace jool_backend.Services
             };
         }
 
-        private JwtSecurityToken CreateToken(List<Claim> claims, SigningCredentials credentials, 
+        private JwtSecurityToken CreateToken(List<Claim> claims, SigningCredentials credentials,
                                             string issuer, string audience, DateTime expires)
         {
             return new JwtSecurityToken(
@@ -95,4 +95,4 @@ namespace jool_backend.Services
             );
         }
     }
-} 
+}

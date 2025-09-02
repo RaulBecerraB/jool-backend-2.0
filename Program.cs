@@ -17,17 +17,18 @@ using Microsoft.AspNetCore.Http;
 using System.Linq;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Cargar variables de entorno desde el archivo .env
 try
 {
     Env.Load();
     Console.WriteLine("Variables de entorno cargadas desde .env");
-    
+
     // Verificar si las variables críticas están presentes
     var clientId = Environment.GetEnvironmentVariable("MS_CLIENT_ID");
     var clientSecret = Environment.GetEnvironmentVariable("MS_CLIENT_SECRET");
-    
+
     Console.WriteLine($"MS_CLIENT_ID está {(string.IsNullOrEmpty(clientId) ? "AUSENTE" : "presente")}");
     Console.WriteLine($"MS_CLIENT_SECRET está {(string.IsNullOrEmpty(clientSecret) ? "AUSENTE" : "presente")}");
 }
@@ -49,13 +50,13 @@ builder.Services.AddFluentValidationAutoValidation()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
-    { 
-        Title = "Jool API", 
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Jool API",
         Version = "v1",
         Description = "API para la plataforma Jool"
     });
-    
+
     // Configurar seguridad JWT para Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -65,7 +66,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -80,7 +81,7 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
-    
+
     // Configuración para manejar rutas duplicadas
     c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 });
@@ -217,7 +218,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    
+
     // Imprimir las rutas registradas en modo desarrollo
     var endpointDataSource = app.Services.GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>();
     foreach (var endpoint in endpointDataSource.Endpoints)
@@ -230,6 +231,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Habilitar CORS
 app.UseCors("AllowAll");
