@@ -295,7 +295,7 @@ namespace jool_backend.Services
                 LoggingUtils.LogInfo("Procesando código de autorización...", nameof(MicrosoftAuthService));
 
                 // Usar localhost como URL de redirección para Azure AD
-                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com:8080/auth/microsoft-callback";
+                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com/auth/microsoft-callback";
 
                 LoggingUtils.LogInfo($"URL de redirección: {redirectUri}", nameof(MicrosoftAuthService));
 
