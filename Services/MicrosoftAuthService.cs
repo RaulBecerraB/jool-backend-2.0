@@ -49,7 +49,7 @@ namespace jool_backend.Services
 
                 // 1. Intercambiar el código por un token de acceso
                 var httpClient = _httpClientFactory.CreateClient();
-                
+
                 var tokenRequestParams = new Dictionary<string, string>
                 {
                     ["client_id"] = Environment.GetEnvironmentVariable("MS_CLIENT_ID"),
@@ -69,12 +69,12 @@ namespace jool_backend.Services
 
                 LoggingUtils.LogInfo("Enviando solicitud para obtener token...", nameof(MicrosoftAuthService));
                 var tokenResponse = await httpClient.PostAsync(
-                    "https://login.microsoftonline.com/common/oauth2/v2.0/token", 
+                    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
                     tokenRequestContent);
 
                 var responseContent = await tokenResponse.Content.ReadAsStringAsync();
                 LoggingUtils.LogInfo($"Respuesta del token: StatusCode={tokenResponse.StatusCode}", nameof(MicrosoftAuthService));
-                
+
                 if (!tokenResponse.IsSuccessStatusCode)
                 {
                     LoggingUtils.LogError($"Error al obtener token: {responseContent}", nameof(MicrosoftAuthService));
@@ -82,29 +82,29 @@ namespace jool_backend.Services
                 }
 
                 LoggingUtils.LogInfo("Token obtenido exitosamente", nameof(MicrosoftAuthService));
-                
+
                 // 2. Parsear la respuesta JSON para obtener el token
                 var tokenData = JsonDocument.Parse(responseContent);
                 var accessToken = tokenData.RootElement.GetProperty("access_token").GetString();
-                
+
                 if (string.IsNullOrEmpty(accessToken))
                 {
                     LoggingUtils.LogError("Error: Token de acceso vacío", nameof(MicrosoftAuthService));
                     return null;
                 }
-                
+
                 LoggingUtils.LogInfo("Token de acceso válido obtenido", nameof(MicrosoftAuthService));
 
                 // 3. Obtener información del usuario con el token
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
-                
+
                 LoggingUtils.LogInfo("Solicitando información del usuario...", nameof(MicrosoftAuthService));
                 var userResponse = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
-                
+
                 var userResponseContent = await userResponse.Content.ReadAsStringAsync();
                 LoggingUtils.LogInfo($"Respuesta del usuario: StatusCode={userResponse.StatusCode}", nameof(MicrosoftAuthService));
-                
+
                 if (!userResponse.IsSuccessStatusCode)
                 {
                     LoggingUtils.LogError($"Error al obtener información del usuario: {userResponseContent}", nameof(MicrosoftAuthService));
@@ -112,10 +112,10 @@ namespace jool_backend.Services
                 }
 
                 LoggingUtils.LogInfo("Información del usuario obtenida exitosamente", nameof(MicrosoftAuthService));
-                
+
                 // 4. Parsear los datos del usuario
                 var userData = JsonDocument.Parse(userResponseContent);
-                
+
                 string email = null;
                 if (userData.RootElement.TryGetProperty("mail", out var mailProperty) && !mailProperty.ValueKind.Equals(JsonValueKind.Null))
                 {
@@ -125,30 +125,30 @@ namespace jool_backend.Services
                 {
                     email = upnProperty.GetString();
                 }
-                
-                var firstName = userData.RootElement.TryGetProperty("givenName", out var givenNameProperty) 
+
+                var firstName = userData.RootElement.TryGetProperty("givenName", out var givenNameProperty)
                     ? givenNameProperty.GetString() : "Usuario";
-                
+
                 var lastName = userData.RootElement.TryGetProperty("surname", out var surnameProperty)
                     ? surnameProperty.GetString() : "Microsoft";
-                
+
                 if (string.IsNullOrEmpty(email))
                 {
                     LoggingUtils.LogError("Error: No se pudo obtener el email del usuario", nameof(MicrosoftAuthService));
                     return null;
                 }
-                
+
                 LoggingUtils.LogInfo($"Datos obtenidos de Microsoft: Email={email}, Nombre={firstName} {lastName}", nameof(MicrosoftAuthService));
-                
+
                 // 5. Buscar o crear usuario
                 var existingUser = await _userRepository.GetUserByEmailAsync(email);
-                
+
                 if (existingUser == null)
                 {
                     LoggingUtils.LogInfo("Creando nuevo usuario...", nameof(MicrosoftAuthService));
                     // Crear un nuevo usuario con una contraseña aleatoria
                     string randomPassword = SecurityUtils.GenerateRandomPassword();
-                    
+
                     var newUser = new User
                     {
                         email = email,
@@ -157,7 +157,7 @@ namespace jool_backend.Services
                         password = SecurityUtils.HashPassword(randomPassword),
                         is_active = true
                     };
-                    
+
                     existingUser = await _userRepository.CreateUserAsync(newUser);
                     LoggingUtils.LogInfo($"Nuevo usuario creado con ID: {existingUser?.user_id}", nameof(MicrosoftAuthService));
                 }
@@ -165,11 +165,11 @@ namespace jool_backend.Services
                 {
                     LoggingUtils.LogInfo($"Usuario existente encontrado con ID: {existingUser.user_id}", nameof(MicrosoftAuthService));
                 }
-                
+
                 // 6. Generar JWT
                 var token = _tokenService.GenerateJwtToken(existingUser);
                 LoggingUtils.LogInfo("Token JWT generado correctamente", nameof(MicrosoftAuthService));
-                
+
                 // 7. Devolver DTO
                 return MappingUtils.MapToUserDtoWithToken(existingUser, token);
             }
@@ -186,7 +186,7 @@ namespace jool_backend.Services
             try
             {
                 Console.WriteLine("Procesando autenticación con Microsoft...");
-                
+
                 if (_httpContextAccessor.HttpContext == null)
                 {
                     Console.WriteLine("Error: HttpContext es null");
@@ -195,7 +195,7 @@ namespace jool_backend.Services
 
                 // Es importante usar el mismo esquema que se usa en Challenge
                 var authenticateResult = await _httpContextAccessor.HttpContext.AuthenticateAsync("Microsoft");
-                
+
                 if (!authenticateResult.Succeeded)
                 {
                     Console.WriteLine($"Error: Autenticación fallida. {authenticateResult.Failure?.Message}");
@@ -206,25 +206,25 @@ namespace jool_backend.Services
                 var email = authenticateResult.Principal.FindFirstValue(ClaimTypes.Email);
                 var firstName = authenticateResult.Principal.FindFirstValue(ClaimTypes.GivenName) ?? "Usuario";
                 var lastName = authenticateResult.Principal.FindFirstValue(ClaimTypes.Surname) ?? "Microsoft";
-                
+
                 Console.WriteLine($"Datos recibidos de Microsoft - Email: {email}, Nombre: {firstName} {lastName}");
-                
+
                 if (string.IsNullOrEmpty(email))
                 {
                     Console.WriteLine("Error: No se pudo obtener el email del usuario");
                     return null;
                 }
-                
+
                 // Verificar si el usuario ya existe
                 var existingUser = await _userRepository.GetUserByEmailAsync(email);
-                
+
                 if (existingUser == null)
                 {
                     Console.WriteLine("Creando nuevo usuario...");
                     // Crear un nuevo usuario con una contraseña aleatoria
                     // (el usuario nunca la usará porque se autenticará con Microsoft)
                     string randomPassword = Guid.NewGuid().ToString();
-                    
+
                     var newUser = new User
                     {
                         email = email,
@@ -233,7 +233,7 @@ namespace jool_backend.Services
                         password = HashPassword(randomPassword),
                         is_active = true
                     };
-                    
+
                     existingUser = await _userRepository.CreateUserAsync(newUser);
                     Console.WriteLine($"Nuevo usuario creado con ID: {existingUser?.user_id}");
                 }
@@ -241,11 +241,11 @@ namespace jool_backend.Services
                 {
                     Console.WriteLine($"Usuario existente encontrado con ID: {existingUser.user_id}");
                 }
-                
+
                 // Generar el token JWT
                 var token = _tokenService.GenerateJwtToken(existingUser);
                 Console.WriteLine("Token JWT generado correctamente");
-                
+
                 // Devolver el DTO del usuario con el token
                 return new UserDto
                 {
@@ -295,17 +295,17 @@ namespace jool_backend.Services
                 LoggingUtils.LogInfo("Procesando código de autorización...", nameof(MicrosoftAuthService));
 
                 // Usar localhost como URL de redirección para Azure AD
-                string redirectUri = "http://localhost:8080/auth/microsoft-callback";
-                
+                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com:8080/auth/microsoft-callback";
+
                 LoggingUtils.LogInfo($"URL de redirección: {redirectUri}", nameof(MicrosoftAuthService));
 
                 // Crear cliente HTTP
                 var httpClient = _httpClientFactory.CreateClient();
-                
+
                 // Obtener credenciales
                 var clientId = Environment.GetEnvironmentVariable("MS_CLIENT_ID");
                 var clientSecret = Environment.GetEnvironmentVariable("MS_CLIENT_SECRET");
-                
+
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
                 {
                     LoggingUtils.LogError("Credenciales de Microsoft no configuradas correctamente", nameof(MicrosoftAuthService));
@@ -327,41 +327,41 @@ namespace jool_backend.Services
                 // Solicitar token
                 LoggingUtils.LogInfo("Solicitando token a Microsoft...", nameof(MicrosoftAuthService));
                 var tokenResponse = await httpClient.PostAsync(tokenEndpoint, tokenRequestContent);
-                
+
                 if (!tokenResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await tokenResponse.Content.ReadAsStringAsync();
                     LoggingUtils.LogError($"Error al obtener token: {errorContent}", nameof(MicrosoftAuthService));
                     throw new InvalidOperationException($"Error al obtener token de Microsoft: {errorContent}");
                 }
-                
+
                 // Parsear respuesta
                 var tokenResponseJson = await tokenResponse.Content.ReadAsStringAsync();
                 var tokenData = JsonDocument.Parse(tokenResponseJson);
                 var accessToken = tokenData.RootElement.GetProperty("access_token").GetString();
-                
+
                 // Configurar cliente para solicitar datos de usuario
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
-                
+
                 // Solicitar datos de usuario
                 LoggingUtils.LogInfo("Solicitando información del usuario...", nameof(MicrosoftAuthService));
                 var userInfoResponse = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
-                
+
                 if (!userInfoResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await userInfoResponse.Content.ReadAsStringAsync();
                     LoggingUtils.LogError($"Error al obtener información del usuario: {errorContent}", nameof(MicrosoftAuthService));
                     throw new InvalidOperationException($"Error al obtener información del usuario: {errorContent}");
                 }
-                
+
                 // Parsear datos del usuario
                 var userInfoJson = await userInfoResponse.Content.ReadAsStringAsync();
                 var userInfo = JsonDocument.Parse(userInfoJson);
-                
+
                 // Extraer datos relevantes
                 string email = null;
-                if (userInfo.RootElement.TryGetProperty("mail", out var mailProperty) && 
+                if (userInfo.RootElement.TryGetProperty("mail", out var mailProperty) &&
                     mailProperty.ValueKind != JsonValueKind.Null)
                 {
                     email = mailProperty.GetString();
@@ -370,33 +370,33 @@ namespace jool_backend.Services
                 {
                     email = upnProperty.GetString();
                 }
-                
+
                 if (string.IsNullOrEmpty(email))
                 {
                     LoggingUtils.LogError("No se pudo obtener el email del usuario", nameof(MicrosoftAuthService));
                     throw new InvalidOperationException("No se pudo obtener el email del usuario desde Microsoft");
                 }
-                
-                var firstName = userInfo.RootElement.TryGetProperty("givenName", out var givenNameProperty) 
-                    ? givenNameProperty.GetString() 
+
+                var firstName = userInfo.RootElement.TryGetProperty("givenName", out var givenNameProperty)
+                    ? givenNameProperty.GetString()
                     : "Usuario";
-                    
-                var lastName = userInfo.RootElement.TryGetProperty("surname", out var surnameProperty) 
-                    ? surnameProperty.GetString() 
+
+                var lastName = userInfo.RootElement.TryGetProperty("surname", out var surnameProperty)
+                    ? surnameProperty.GetString()
                     : "Microsoft";
-                
+
                 LoggingUtils.LogInfo($"Datos obtenidos: Email={email}, Nombre={firstName} {lastName}", nameof(MicrosoftAuthService));
-                
+
                 // Buscar o crear usuario
                 var existingUser = await _userRepository.GetUserByEmailAsync(email);
-                
+
                 if (existingUser == null)
                 {
                     LoggingUtils.LogInfo("Usuario no encontrado, creando nuevo usuario...", nameof(MicrosoftAuthService));
-                    
+
                     // Generar contraseña aleatoria
                     string randomPassword = SecurityUtils.GenerateRandomPassword();
-                    
+
                     // Crear nuevo usuario
                     var newUser = new User
                     {
@@ -406,7 +406,7 @@ namespace jool_backend.Services
                         password = SecurityUtils.HashPassword(randomPassword),
                         is_active = true
                     };
-                    
+
                     existingUser = await _userRepository.CreateUserAsync(newUser);
                     LoggingUtils.LogInfo($"Nuevo usuario creado con ID: {existingUser.user_id}", nameof(MicrosoftAuthService));
                 }
@@ -414,11 +414,11 @@ namespace jool_backend.Services
                 {
                     LoggingUtils.LogInfo($"Usuario encontrado con ID: {existingUser.user_id}", nameof(MicrosoftAuthService));
                 }
-                
+
                 // Generar token JWT
                 var jwtToken = _tokenService.GenerateJwtToken(existingUser);
                 LoggingUtils.LogInfo("Token JWT generado correctamente", nameof(MicrosoftAuthService));
-                
+
                 return (existingUser, jwtToken);
             }
             catch (Exception ex)
@@ -434,40 +434,40 @@ namespace jool_backend.Services
             try
             {
                 LoggingUtils.LogInfo("Generando URL de autorización de Microsoft...", nameof(MicrosoftAuthService));
-                
+
                 // Obtener parámetros necesarios
                 var clientId = Environment.GetEnvironmentVariable("MS_CLIENT_ID");
-                
+
                 if (string.IsNullOrEmpty(clientId))
                 {
                     LoggingUtils.LogError("ClientID de Microsoft no está configurado", nameof(MicrosoftAuthService));
                     throw new InvalidOperationException("El client_id de Microsoft no está configurado");
                 }
-                
+
                 // Siempre usar localhost para la URL de redirección en Azure AD
-                string redirectUri = "http://localhost:8080/auth/microsoft-callback";
-                
+                string redirectUri = "https://refined-portion-substance-rendered.trycloudflare.com:8080/auth/microsoft-callback";
+
                 // Guardar la URL real para usar después en el callback
                 var request = _httpContextAccessor.HttpContext.Request;
                 var realRedirectUri = $"{request.Scheme}://{request.Host}/auth/microsoft-callback";
-                
+
                 // Guardar la URL real en la sesión
                 _httpContextAccessor.HttpContext.Session.Set(
-                    "RealRedirectUri", 
+                    "RealRedirectUri",
                     System.Text.Encoding.UTF8.GetBytes(realRedirectUri)
                 );
                 LoggingUtils.LogInfo($"URL real guardada: {realRedirectUri}", nameof(MicrosoftAuthService));
-                
+
                 // Si se proporcionó una URL de redirección personalizada, guardarla en la sesión
                 if (!string.IsNullOrEmpty(redirectUrl))
                 {
                     _httpContextAccessor.HttpContext.Session.Set(
-                        "MicrosoftAuthRedirectUrl", 
+                        "MicrosoftAuthRedirectUrl",
                         System.Text.Encoding.UTF8.GetBytes(redirectUrl)
                     );
                     LoggingUtils.LogInfo($"URL de redirección personalizada guardada: {redirectUrl}", nameof(MicrosoftAuthService));
                 }
-                
+
                 // Crear la URL de autorización
                 var authUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize" +
                               $"?client_id={Uri.EscapeDataString(clientId)}" +
@@ -476,7 +476,7 @@ namespace jool_backend.Services
                               "&response_mode=query" +
                               "&scope=user.read%20openid%20profile%20email" +
                               "&prompt=select_account";
-                
+
                 LoggingUtils.LogInfo($"URL de autorización generada: {authUrl}", nameof(MicrosoftAuthService));
                 return authUrl;
             }
@@ -487,4 +487,4 @@ namespace jool_backend.Services
             }
         }
     }
-} 
+}
