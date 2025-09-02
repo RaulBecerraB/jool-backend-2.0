@@ -51,5 +51,22 @@ namespace jool_backend.Utils
             
             return customRedirectUrl;
         }
+        
+        /// <summary>
+        /// Obtiene la URL real de redirección almacenada en la sesión
+        /// </summary>
+        /// <param name="httpContext">Contexto HTTP actual</param>
+        /// <returns>URL real o null si no existe</returns>
+        public static string GetRealRedirectUri(HttpContext httpContext)
+        {
+            string realRedirectUri = null;
+            if (httpContext.Session.TryGetValue("RealRedirectUri", out var redirectUriBytes))
+            {
+                realRedirectUri = System.Text.Encoding.UTF8.GetString(redirectUriBytes);
+                // No eliminamos la URL real de la sesión para poder usarla en solicitudes subsiguientes
+            }
+            
+            return realRedirectUri;
+        }
     }
 } 

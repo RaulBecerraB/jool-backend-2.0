@@ -49,7 +49,7 @@ dotnet jool-backend.dll' > /app/entrypoint.sh && \
 chmod +x /app/entrypoint.sh
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_URLS="http://+:80"
 ENV ASPNETCORE_ENVIRONMENT=Production
 # Usar ARG para recibir las variables en tiempo de construcción o dejarlas vacías para pasarlas en tiempo de ejecución
 ARG MS_CLIENT_ID_ARG

@@ -294,12 +294,8 @@ namespace jool_backend.Services
             {
                 LoggingUtils.LogInfo("Procesando código de autorización...", nameof(MicrosoftAuthService));
 
-                // Obtener la URL de redirección configurada
-                string redirectUri = _configuration["Authentication:Microsoft:RedirectUri"];
-                if (string.IsNullOrEmpty(redirectUri))
-                {
-                    redirectUri = $"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}/auth/microsoft-callback";
-                }
+                // Usar localhost como URL de redirección para Azure AD
+                string redirectUri = "http://localhost:8080/auth/microsoft-callback";
                 
                 LoggingUtils.LogInfo($"URL de redirección: {redirectUri}", nameof(MicrosoftAuthService));
 
@@ -448,14 +444,19 @@ namespace jool_backend.Services
                     throw new InvalidOperationException("El client_id de Microsoft no está configurado");
                 }
                 
-                // Obtener la URL de redirección configurada
-                string redirectUri = _configuration["Authentication:Microsoft:RedirectUri"];
-                if (string.IsNullOrEmpty(redirectUri))
-                {
-                    // Si no hay una configurada, usar la URL actual
-                    var request = _httpContextAccessor.HttpContext.Request;
-                    redirectUri = $"{request.Scheme}://{request.Host}/auth/microsoft-callback";
-                }
+                // Siempre usar localhost para la URL de redirección en Azure AD
+                string redirectUri = "http://localhost:8080/auth/microsoft-callback";
+                
+                // Guardar la URL real para usar después en el callback
+                var request = _httpContextAccessor.HttpContext.Request;
+                var realRedirectUri = $"{request.Scheme}://{request.Host}/auth/microsoft-callback";
+                
+                // Guardar la URL real en la sesión
+                _httpContextAccessor.HttpContext.Session.Set(
+                    "RealRedirectUri", 
+                    System.Text.Encoding.UTF8.GetBytes(realRedirectUri)
+                );
+                LoggingUtils.LogInfo($"URL real guardada: {realRedirectUri}", nameof(MicrosoftAuthService));
                 
                 // Si se proporcionó una URL de redirección personalizada, guardarla en la sesión
                 if (!string.IsNullOrEmpty(redirectUrl))
